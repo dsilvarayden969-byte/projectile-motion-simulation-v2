@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projectile Motion with Air Resistance</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #15202b;
+      --muted: #596875;
+      --line: #d7e0e7;
+      --panel: #ffffff;
+      --paper: #f5f7f2;
+      --track: #dce6ed;
+      --accent: #0f7b6c;
+      --accent-2: #c44536;
+      --accent-3: #3266a8;
+      --gold: #b98513;
+      --shadow: 0 18px 48px rgba(27, 43, 55, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(245, 247, 242, 0.96), rgba(235, 240, 238, 0.98)),
+        repeating-linear-gradient(0deg, rgba(21, 32, 43, 0.035) 0 1px, transparent 1px 28px),
+        repeating-linear-gradient(90deg, rgba(21, 32, 43, 0.025) 0 1px, transparent 1px 28px);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .shell {
+      width: min(1480px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 30px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 2vw, 2.35rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      max-width: 780px;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.45;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      cursor: pointer;
+      padding: 8px 12px;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    }
+
+    .button:hover {
+      border-color: #b6c5cf;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .button.icon {
+      width: 40px;
+      padding: 0;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    aside,
+    .stage,
+    .graph-panel,
+    .data-panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(176, 192, 201, 0.8);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    aside {
+      padding: 16px;
+      position: sticky;
+      top: 16px;
+    }
+
+    .preset-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    select {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 7px 10px;
+    }
+
+    .control {
+      padding: 13px 0;
+      border-top: 1px solid #e5ebef;
+    }
+
+    .control:first-of-type {
+      border-top: 0;
+    }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.25;
+    }
+
+    .value {
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      margin: 10px 0 0;
+    }
+
+    .switches {
+      display: grid;
+      gap: 9px;
+      padding-top: 13px;
+      border-top: 1px solid #e5ebef;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .check input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--accent);
+    }
+
+    main {
+      display: grid;
+      gap: 18px;
+    }
+
+    .stage {
+      overflow: hidden;
+    }
+
+    .stage-head,
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 48px;
+      padding: 12px 14px;
+      border-bottom: 1px solid #e5ebef;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .key {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 22px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .swatch.ideal {
+      background: var(--accent-2);
+    }
+
+    .swatch.vector {
+      background: var(--gold);
+    }
+
+    .canvas-wrap {
+      position: relative;
+      background: linear-gradient(#eef6fb 0%, #f7fbfd 62%, #ece7d8 62%, #ded2b8 100%);
+      aspect-ratio: 16 / 8.7;
+      min-height: 370px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .readout {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(110px, 1fr));
+      gap: 8px;
+      width: min(660px, calc(100% - 28px));
+      pointer-events: none;
+    }
+
+    .metric {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(196, 207, 214, 0.9);
+      border-radius: 8px;
+      padding: 8px 10px;
+      min-width: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.73rem;
+      line-height: 1.2;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .lower {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 18px;
+    }
+
+    .graph-panel,
+    .data-panel {
+      overflow: hidden;
+    }
+
+    .graph-wrap {
+      aspect-ratio: 16 / 7.4;
+      min-height: 250px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    th,
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e7edf1;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    th:first-child,
+    td:first-child {
+      text-align: left;
+      color: var(--muted);
+    }
+
+    th {
+      color: #344957;
+      background: #f7fafb;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .note {
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.45;
+      border-top: 1px solid #e5ebef;
+    }
+
+    .formula {
+      color: var(--ink);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 1020px) {
+      header,
+      .layout,
+      .lower {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100vw - 18px, 1480px);
+        padding-top: 12px;
+      }
+
+      .stage-head,
+      .panel-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .legend {
+        justify-content: flex-start;
+      }
+
+      .canvas-wrap {
+        aspect-ratio: 10 / 9;
+        min-height: 390px;
+      }
+
+      .readout {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .metric strong {
+        font-size: 0.92rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>Projectile Motion with Air Resistance</h1>
+        <p class="subtitle">Interactive investigation simulator comparing ideal projectile motion with quadratic air drag. Adjust launch conditions, projectile properties, and fluid conditions to observe how drag changes range, height, speed, and flight time.</p>
+      </div>
+      <div class="toolbar" aria-label="Simulation controls">
+        <button class="button primary" id="playPause" title="Play or pause animation">▶ Play</button>
+        <button class="button icon" id="stepBack" title="Step backward">↶</button>
+        <button class="button icon" id="stepForward" title="Step forward">↷</button>
+        <button class="button" id="reset" title="Reset animation">Reset</button>
+        <button class="button" id="downloadCsv" title="Download simulation data">CSV</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside>
+        <div class="preset-row">
+          <select id="preset" aria-label="Preset">
+            <option value="custom">Custom investigation</option>
+            <option value="tennis">Tennis ball</option>
+            <option value="baseball">Baseball</option>
+            <option value="golf">Golf ball</option>
+            <option value="shotput">Shot put</option>
+          </select>
+          <button class="button icon" id="applyPreset" title="Apply selected preset">✓</button>
+        </div>
+
+        <div class="control">
+          <label for="speed">Initial speed <span class="value" id="speedValue"></span></label>
+          <input id="speed" type="range" min="5" max="90" step="1" value="40">
+        </div>
+        <div class="control">
+          <label for="angle">Launch angle <span class="value" id="angleValue"></span></label>
+          <input id="angle" type="range" min="5" max="85" step="1" value="42">
+        </div>
+        <div class="control">
+          <label for="height">Launch height <span class="value" id="heightValue"></span></label>
+          <input id="height" type="range" min="0" max="15" step="0.1" value="1.8">
+        </div>
+        <div class="control">
+          <label for="mass">Mass <span class="value" id="massValue"></span></label>
+          <input id="mass" type="range" min="0.02" max="8" step="0.01" value="0.145">
+        </div>
+        <div class="control">
+          <label for="diameter">Diameter <span class="value" id="diameterValue"></span></label>
+          <input id="diameter" type="range" min="1" max="25" step="0.1" value="7.4">
+        </div>
+        <div class="control">
+          <label for="drag">Drag coefficient <span class="value" id="dragValue"></span></label>
+          <input id="drag" type="range" min="0.05" max="1.4" step="0.01" value="0.47">
+        </div>
+        <div class="control">
+          <label for="density">Air density <span class="value" id="densityValue"></span></label>
+          <input id="density" type="range" min="0" max="1.5" step="0.01" value="1.225">
+        </div>
+        <div class="control">
+          <label for="gravity">Gravity <span class="value" id="gravityValue"></span></label>
+          <input id="gravity" type="range" min="1.6" max="24.8" step="0.1" value="9.8">
+        </div>
+
+        <div class="switches">
+          <label class="check"><input id="showIdeal" type="checkbox" checked> Show ideal no-air trajectory</label>
+          <label class="check"><input id="showVelocity" type="checkbox" checked> Show velocity vector</label>
+          <label class="check"><input id="showDrag" type="checkbox" checked> Show drag force vector</label>
+          <label class="check"><input id="slowMotion" type="checkbox"> Slow motion playback</label>
+        </div>
+      </aside>
+
+      <main>
+        <section class="stage">
+          <div class="stage-head">
+            <h2 class="panel-title">Trajectory View</h2>
+            <div class="legend">
+              <span class="key"><i class="swatch"></i>With air resistance</span>
+              <span class="key"><i class="swatch ideal"></i>No air resistance</span>
+              <span class="key"><i class="swatch vector"></i>Live vectors</span>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="scene" aria-label="Projectile trajectory simulation"></canvas>
+            <div class="readout">
+              <div class="metric"><span>Time</span><strong id="timeNow">0.00 s</strong></div>
+              <div class="metric"><span>Position</span><strong id="positionNow">0.0, 0.0 m</strong></div>
+              <div class="metric"><span>Speed</span><strong id="speedNow">0.0 m/s</strong></div>
+              <div class="metric"><span>Drag force</span><strong id="dragNow">0.00 N</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="lower">
+          <section class="graph-panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Height and Speed Graph</h2>
+              <select id="graphMode" aria-label="Graph mode">
+                <option value="height">Height vs time</option>
+                <option value="speed">Speed vs time</option>
+                <option value="drag">Drag force vs time</option>
+              </select>
+            </div>
+            <div class="graph-wrap">
+              <canvas id="graph" aria-label="Simulation graph"></canvas>
+            </div>
+          </section>
+
+          <section class="data-panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Investigation Data</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Measurement</th>
+                    <th>Air drag</th>
+                    <th>No air</th>
+                    <th>Change</th>
+                  </tr>
+                </thead>
+                <tbody id="stats"></tbody>
+              </table>
+            </div>
+            <div class="note">
+              Drag model: <span class="formula">F<sub>d</sub> = 0.5ρC<sub>d</sub>Av²</span>, acceleration from drag is applied opposite the velocity vector. The numerical model uses small time steps and stops when the projectile returns to ground level.
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const controls = {
+      speed: $("speed"),
+      angle: $("angle"),
+      height: $("height"),
+      mass: $("mass"),
+      diameter: $("diameter"),
+      drag: $("drag"),
+      density: $("density"),
+      gravity: $("gravity")
+    };
+
+    const valueLabels = {
+      speed: $("speedValue"),
+      angle: $("angleValue"),
+      height: $("heightValue"),
+      mass: $("massValue"),
+      diameter: $("diameterValue"),
+      drag: $("dragValue"),
+      density: $("densityValue"),
+      gravity: $("gravityValue")
+    };
+
+    const scene = $("scene");
+    const graph = $("graph");
+    const sceneCtx = scene.getContext("2d");
+    const graphCtx = graph.getContext("2d");
+    const statsBody = $("stats");
+    const playPause = $("playPause");
+
+    const presets = {
+      tennis: { speed: 35, angle: 38, height: 1.1, mass: 0.058, diameter: 6.7, drag: 0.55, density: 1.225, gravity: 9.8 },
+      baseball: { speed: 45, angle: 35, height: 1.8, mass: 0.145, diameter: 7.4, drag: 0.47, density: 1.225, gravity: 9.8 },
+      golf: { speed: 70, angle: 28, height: 0.2, mass: 0.046, diameter: 4.27, drag: 0.25, density: 1.225, gravity: 9.8 },
+      shotput: { speed: 14, angle: 42, height: 2.1, mass: 7.26, diameter: 12, drag: 0.47, density: 1.225, gravity: 9.8 }
+    };
+
+    let sim = null;
+    let playing = false;
+    let playhead = 0;
+    let lastFrame = 0;
+
+    function params() {
+      return {
+        speed: Number(controls.speed.value),
+        angle: Number(controls.angle.value) * Math.PI / 180,
+        angleDeg: Number(controls.angle.value),
+        height: Number(controls.height.value),
+        mass: Number(controls.mass.value),
+        diameter: Number(controls.diameter.value) / 100,
+        drag: Number(controls.drag.value),
+        density: Number(controls.density.value),
+        gravity: Number(controls.gravity.value)
+      };
+    }
+
+    function updateLabels() {
+      const p = params();
+      valueLabels.speed.textContent = `${p.speed.toFixed(0)} m/s`;
+      valueLabels.angle.textContent = `${p.angleDeg.toFixed(0)}°`;
+      valueLabels.height.textContent = `${p.height.toFixed(1)} m`;
+      valueLabels.mass.textContent = `${p.mass.toFixed(2)} kg`;
+      valueLabels.diameter.textContent = `${(p.diameter * 100).toFixed(1)} cm`;
+      valueLabels.drag.textContent = p.drag.toFixed(2);
+      valueLabels.density.textContent = `${p.density.toFixed(2)} kg/m³`;
+      valueLabels.gravity.textContent = `${p.gravity.toFixed(1)} m/s²`;
+    }
+
+    function dragAcceleration(state, p) {
+      const area = Math.PI * Math.pow(p.diameter / 2, 2);
+      const speed = Math.hypot(state.vx, state.vy);
+      if (speed === 0 || p.density === 0 || p.drag === 0) {
+        return { ax: 0, ay: -p.gravity, dragForce: 0 };
+      }
+      const dragForce = 0.5 * p.density * p.drag * area * speed * speed;
+      const dragAccel = dragForce / p.mass;
+      return {
+        ax: -dragAccel * state.vx / speed,
+        ay: -p.gravity - dragAccel * state.vy / speed,
+        dragForce
+      };
+    }
+
+    function rk4Step(s, dt, p) {
+      function deriv(state) {
+        const a = dragAcceleration(state, p);
+        return { x: state.vx, y: state.vy, vx: a.ax, vy: a.ay };
+      }
+      function add(state, d, scale) {
+        return {
+          x: state.x + d.x * scale,
+          y: state.y + d.y * scale,
+          vx: state.vx + d.vx * scale,
+          vy: state.vy + d.vy * scale
+        };
+      }
+      const k1 = deriv(s);
+      const k2 = deriv(add(s, k1, dt / 2));
+      const k3 = deriv(add(s, k2, dt / 2));
+      const k4 = deriv(add(s, k3, dt));
+      return {
+        x: s.x + dt * (k1.x + 2 * k2.x + 2 * k3.x + k4.x) / 6,
+        y: s.y + dt * (k1.y + 2 * k2.y + 2 * k3.y + k4.y) / 6,
+        vx: s.vx + dt * (k1.vx + 2 * k2.vx + 2 * k3.vx + k4.vx) / 6,
+        vy: s.vy + dt * (k1.vy + 2 * k2.vy + 2 * k3.vy + k4.vy) / 6
+      };
+    }
+
+    function simulateAir(p) {
+      const dt = 0.01;
+      let t = 0;
+      let state = {
+        x: 0,
+        y: p.height,
+        vx: p.speed * Math.cos(p.angle),
+        vy: p.speed * Math.sin(p.angle)
+      };
+      const points = [];
+      let maxHeight = state.y;
+      let maxSpeed = p.speed;
+      const limit = 200;
+
+      for (let i = 0; i < 40000 && t <= limit; i++) {
+        const a = dragAcceleration(state, p);
+        const speed = Math.hypot(state.vx, state.vy);
+        points.push({ t, ...state, speed, dragForce: a.dragForce });
+        maxHeight = Math.max(maxHeight, state.y);
+        maxSpeed = Math.max(maxSpeed, speed);
+        const next = rk4Step(state, dt, p);
+        if (next.y < 0 && points.length > 1) {
+          const frac = state.y / (state.y - next.y);
+          const landing = {
+            t: t + dt * frac,
+            x: state.x + (next.x - state.x) * frac,
+            y: 0,
+            vx: state.vx + (next.vx - state.vx) * frac,
+            vy: state.vy + (next.vy - state.vy) * frac
+          };
+          const landingDrag = dragAcceleration(landing, p);
+          points.push({ ...landing, speed: Math.hypot(landing.vx, landing.vy), dragForce: landingDrag.dragForce });
+          break;
+        }
+        state = next;
+        t += dt;
+      }
+
+      const last = points[points.length - 1];
+      return { points, range: last.x, time: last.t, maxHeight, maxSpeed };
+    }
+
+    function simulateIdeal(p) {
+      const vx = p.speed * Math.cos(p.angle);
+      const vy = p.speed * Math.sin(p.angle);
+      const disc = vy * vy + 2 * p.gravity * p.height;
+      const flightTime = (vy + Math.sqrt(disc)) / p.gravity;
+      const range = vx * flightTime;
+      const maxHeight = p.height + Math.max(0, vy * vy / (2 * p.gravity));
+      const points = [];
+      const steps = Math.max(120, Math.ceil(flightTime / 0.02));
+
+      for (let i = 0; i <= steps; i++) {
+        const t = flightTime * i / steps;
+        const x = vx * t;
+        const y = Math.max(0, p.height + vy * t - 0.5 * p.gravity * t * t);
+        const sy = vy - p.gravity * t;
+        points.push({ t, x, y, vx, vy: sy, speed: Math.hypot(vx, sy), dragForce: 0 });
+      }
+      return { points, range, time: flightTime, maxHeight, maxSpeed: p.speed };
+    }
+
+    function buildSimulation() {
+      updateLabels();
+      const p = params();
+      const air = simulateAir(p);
+      const ideal = simulateIdeal(p);
+      const terminal = p.density > 0 && p.drag > 0
+        ? Math.sqrt((2 * p.mass * p.gravity) / (p.density * p.drag * Math.PI * Math.pow(p.diameter / 2, 2)))
+        : Infinity;
+      sim = { p, air, ideal, terminal };
+      playhead = Math.min(playhead, air.time);
+      updateStats();
+      draw();
+    }
+
+    function resizeCanvas(canvas, ctx) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const width = Math.round(rect.width * dpr);
+      const height = Math.round(rect.height * dpr);
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { w: rect.width, h: rect.height };
+    }
+
+    function worldBounds() {
+      const maxX = Math.max(sim.air.range, sim.ideal.range, 8);
+      const maxY = Math.max(sim.air.maxHeight, sim.ideal.maxHeight, sim.p.height + 2, 4);
+      return {
+        xMax: maxX * 1.08,
+        yMax: maxY * 1.22
+      };
+    }
+
+    function pointAt(points, time) {
+      if (time <= 0) return points[0];
+      if (time >= points[points.length - 1].t) return points[points.length - 1];
+      let lo = 0;
+      let hi = points.length - 1;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (points[mid].t < time) lo = mid;
+        else hi = mid;
+      }
+      const a = points[lo];
+      const b = points[hi];
+      const f = (time - a.t) / (b.t - a.t || 1);
+      return {
+        t: time,
+        x: a.x + (b.x - a.x) * f,
+        y: a.y + (b.y - a.y) * f,
+        vx: a.vx + (b.vx - a.vx) * f,
+        vy: a.vy + (b.vy - a.vy) * f,
+        speed: a.speed + (b.speed - a.speed) * f,
+        dragForce: a.dragForce + (b.dragForce - a.dragForce) * f
+      };
+    }
+
+    function drawGrid(ctx, box, bounds, toPx) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(38, 62, 74, 0.16)";
+      ctx.lineWidth = 1;
+      ctx.fillStyle = "rgba(38, 62, 74, 0.62)";
+      ctx.font = "12px system-ui, sans-serif";
+      const xStep = niceStep(bounds.xMax / 6);
+      const yStep = niceStep(bounds.yMax / 5);
+
+      for (let x = 0; x <= bounds.xMax + xStep; x += xStep) {
+        const p = toPx(x, 0);
+        ctx.beginPath();
+        ctx.moveTo(p.x, box.top);
+        ctx.lineTo(p.x, box.bottom);
+        ctx.stroke();
+        ctx.fillText(`${Math.round(x)} m`, p.x + 3, box.bottom + 18);
+      }
+      for (let y = 0; y <= bounds.yMax + yStep; y += yStep) {
+        const p = toPx(0, y);
+        ctx.beginPath();
+        ctx.moveTo(box.left, p.y);
+        ctx.lineTo(box.right, p.y);
+        ctx.stroke();
+        if (y > 0) ctx.fillText(`${Math.round(y)} m`, box.left - 4, p.y - 5);
+      }
+      ctx.restore();
+    }
+
+    function niceStep(raw) {
+      const power = Math.pow(10, Math.floor(Math.log10(raw)));
+      const fraction = raw / power;
+      const nice = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+      return nice * power;
+    }
+
+    function drawPath(ctx, points, toPx, color, dashed, untilTime = Infinity) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      if (dashed) ctx.setLineDash([8, 7]);
+      ctx.beginPath();
+      let started = false;
+      for (const pt of points) {
+        if (pt.t > untilTime) break;
+        const p = toPx(pt.x, pt.y);
+        if (!started) {
+          ctx.moveTo(p.x, p.y);
+          started = true;
+        } else {
+          ctx.lineTo(p.x, p.y);
+        }
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawArrow(ctx, start, dx, dy, color, label) {
+      const length = Math.hypot(dx, dy);
+      if (length < 8) return;
+      const ux = dx / length;
+      const uy = dy / length;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(start.x + dx, start.y + dy);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(start.x + dx, start.y + dy);
+      ctx.lineTo(start.x + dx - ux * 10 - uy * 5, start.y + dy - uy * 10 + ux * 5);
+      ctx.lineTo(start.x + dx - ux * 10 + uy * 5, start.y + dy - uy * 10 - ux * 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = "12px system-ui, sans-serif";
+      ctx.fillText(label, start.x + dx + 8, start.y + dy - 6);
+      ctx.restore();
+    }
+
+    function drawScene() {
+      const { w, h } = resizeCanvas(scene, sceneCtx);
+      const ctx = sceneCtx;
+      ctx.clearRect(0, 0, w, h);
+      const bounds = worldBounds();
+      const box = { left: 54, right: w - 24, top: 22, bottom: h - 50 };
+      const scale = Math.min((box.right - box.left) / bounds.xMax, (box.bottom - box.top) / bounds.yMax);
+      const ground = box.bottom;
+      const toPx = (x, y) => ({ x: box.left + x * scale, y: ground - y * scale });
+
+      drawGrid(ctx, box, bounds, toPx);
+      ctx.save();
+      ctx.strokeStyle = "rgba(73, 74, 60, 0.48)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(box.left, ground);
+      ctx.lineTo(box.right, ground);
+      ctx.stroke();
+      ctx.restore();
+
+      if ($("showIdeal").checked) drawPath(ctx, sim.ideal.points, toPx, "#c44536", true);
+      drawPath(ctx, sim.air.points, toPx, "#0f7b6c", false);
+      drawPath(ctx, sim.air.points, toPx, "rgba(15, 123, 108, 0.35)", false, playhead);
+
+      const pt = pointAt(sim.air.points, playhead);
+      const px = toPx(pt.x, Math.max(0, pt.y));
+      const radius = Math.max(5, Math.min(13, sim.p.diameter * scale / 2));
+
+      ctx.save();
+      ctx.fillStyle = "#25313b";
+      ctx.beginPath();
+      ctx.arc(px.x, px.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.85)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      if ($("showVelocity").checked) {
+        drawArrow(ctx, px, pt.vx * 0.85, -pt.vy * 0.85, "#b98513", "v");
+      }
+      if ($("showDrag").checked && pt.dragForce > 0.01) {
+        const speed = Math.hypot(pt.vx, pt.vy) || 1;
+        const mag = Math.min(70, 13 + pt.dragForce * 4);
+        drawArrow(ctx, px, -pt.vx / speed * mag, pt.vy / speed * mag, "#3266a8", "Fd");
+      }
+
+      $("timeNow").textContent = `${pt.t.toFixed(2)} s`;
+      $("positionNow").textContent = `${pt.x.toFixed(1)}, ${Math.max(0, pt.y).toFixed(1)} m`;
+      $("speedNow").textContent = `${pt.speed.toFixed(1)} m/s`;
+      $("dragNow").textContent = `${pt.dragForce.toFixed(2)} N`;
+    }
+
+    function drawGraph() {
+      const { w, h } = resizeCanvas(graph, graphCtx);
+      const ctx = graphCtx;
+      ctx.clearRect(0, 0, w, h);
+      const mode = $("graphMode").value;
+      const series = sim.air.points.map((pt) => ({
+        x: pt.t,
+        y: mode === "height" ? pt.y : mode === "speed" ? pt.speed : pt.dragForce
+      }));
+      const label = mode === "height" ? "Height (m)" : mode === "speed" ? "Speed (m/s)" : "Drag force (N)";
+      const maxX = Math.max(sim.air.time, 1);
+      const maxY = Math.max(...series.map((p) => p.y), 1) * 1.12;
+      const box = { left: 58, right: w - 22, top: 18, bottom: h - 42 };
+      const toPx = (x, y) => ({
+        x: box.left + (x / maxX) * (box.right - box.left),
+        y: box.bottom - (y / maxY) * (box.bottom - box.top)
+      });
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(38, 62, 74, 0.16)";
+      ctx.fillStyle = "rgba(38, 62, 74, 0.64)";
+      ctx.font = "12px system-ui, sans-serif";
+      for (let i = 0; i <= 5; i++) {
+        const y = maxY * i / 5;
+        const p = toPx(0, y);
+        ctx.beginPath();
+        ctx.moveTo(box.left, p.y);
+        ctx.lineTo(box.right, p.y);
+        ctx.stroke();
+        ctx.fillText(y.toFixed(y >= 10 ? 0 : 1), 10, p.y + 4);
+      }
+      for (let i = 0; i <= 5; i++) {
+        const x = maxX * i / 5;
+        const p = toPx(x, 0);
+        ctx.beginPath();
+        ctx.moveTo(p.x, box.top);
+        ctx.lineTo(p.x, box.bottom);
+        ctx.stroke();
+        ctx.fillText(`${x.toFixed(1)}s`, p.x - 12, box.bottom + 23);
+      }
+      ctx.fillText(label, box.left, 13);
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = mode === "drag" ? "#3266a8" : mode === "speed" ? "#b98513" : "#0f7b6c";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      series.forEach((pt, i) => {
+        const p = toPx(pt.x, pt.y);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+
+      const now = pointAt(sim.air.points, playhead);
+      const nowY = mode === "height" ? now.y : mode === "speed" ? now.speed : now.dragForce;
+      const marker = toPx(now.t, nowY);
+      ctx.fillStyle = "#25313b";
+      ctx.beginPath();
+      ctx.arc(marker.x, marker.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function updateStats() {
+      const rows = [
+        ["Range", sim.air.range, sim.ideal.range, "m"],
+        ["Flight time", sim.air.time, sim.ideal.time, "s"],
+        ["Maximum height", sim.air.maxHeight, sim.ideal.maxHeight, "m"],
+        ["Peak speed", sim.air.maxSpeed, sim.ideal.maxSpeed, "m/s"]
+      ];
+      const terminal = Number.isFinite(sim.terminal) ? `${sim.terminal.toFixed(1)} m/s` : "No drag";
+      statsBody.innerHTML = rows.map(([name, air, ideal, unit]) => {
+        const change = ideal === 0 ? 0 : (air - ideal) / ideal * 100;
+        return `<tr><td>${name}</td><td>${air.toFixed(2)} ${unit}</td><td>${ideal.toFixed(2)} ${unit}</td><td>${change.toFixed(1)}%</td></tr>`;
+      }).join("") + `<tr><td>Terminal speed</td><td>${terminal}</td><td>None</td><td>-</td></tr>`;
+    }
+
+    function draw() {
+      if (!sim) return;
+      drawScene();
+      drawGraph();
+    }
+
+    function animate(frameTime) {
+      if (!lastFrame) lastFrame = frameTime;
+      const delta = Math.min(0.05, (frameTime - lastFrame) / 1000);
+      lastFrame = frameTime;
+      if (playing) {
+        const rate = $("slowMotion").checked ? 0.25 : 1;
+        playhead += delta * rate;
+        if (playhead >= sim.air.time) {
+          playhead = sim.air.time;
+          playing = false;
+          playPause.textContent = "▶ Play";
+        }
+        draw();
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function exportCsv() {
+      const rows = [["time_s", "x_m", "y_m", "vx_m_per_s", "vy_m_per_s", "speed_m_per_s", "drag_force_N"]];
+      sim.air.points.forEach((p) => {
+        rows.push([p.t, p.x, p.y, p.vx, p.vy, p.speed, p.dragForce].map((n) => Number(n).toFixed(5)));
+      });
+      const blob = new Blob([rows.map((r) => r.join(",")).join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "projectile_air_resistance_data.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    Object.values(controls).forEach((control) => {
+      control.addEventListener("input", () => {
+        $("preset").value = "custom";
+        buildSimulation();
+      });
+    });
+
+    $("applyPreset").addEventListener("click", () => {
+      const chosen = presets[$("preset").value];
+      if (!chosen) return;
+      Object.entries(chosen).forEach(([key, value]) => {
+        controls[key].value = value;
+      });
+      playhead = 0;
+      buildSimulation();
+    });
+
+    playPause.addEventListener("click", () => {
+      playing = !playing;
+      if (playhead >= sim.air.time) playhead = 0;
+      playPause.textContent = playing ? "⏸ Pause" : "▶ Play";
+      lastFrame = 0;
+      draw();
+    });
+
+    $("reset").addEventListener("click", () => {
+      playing = false;
+      playhead = 0;
+      playPause.textContent = "▶ Play";
+      draw();
+    });
+
+    $("stepBack").addEventListener("click", () => {
+      playing = false;
+      playPause.textContent = "▶ Play";
+      playhead = Math.max(0, playhead - 0.12);
+      draw();
+    });
+
+    $("stepForward").addEventListener("click", () => {
+      playing = false;
+      playPause.textContent = "▶ Play";
+      playhead = Math.min(sim.air.time, playhead + 0.12);
+      draw();
+    });
+
+    $("downloadCsv").addEventListener("click", exportCsv);
+    $("graphMode").addEventListener("change", draw);
+    ["showIdeal", "showVelocity", "showDrag", "slowMotion"].forEach((id) => $(id).addEventListener("change", draw));
+    window.addEventListener("resize", draw);
+
+    buildSimulation();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
